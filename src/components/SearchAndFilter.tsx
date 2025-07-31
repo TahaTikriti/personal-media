@@ -22,7 +22,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [aiEnabled, setAiEnabled] = useState(!!import.meta.env.VITE_OPENAI_API_KEY);
+  const [aiEnabled] = useState(!!import.meta.env.VITE_OPENAI_API_KEY);
 
   const updateFilter = useCallback((key: keyof SearchFilters, value: any) => {
     onFiltersChange({ ...filters, [key]: value });

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Plus, FileText, Download, Upload, Database, CheckSquare, Trash2, Square } from 'lucide-react';
+import { Plus, FileText, Download, Upload, Database, CheckSquare, Trash2 } from 'lucide-react';
 import type { MediaItem, SearchFilters } from './types';
 import { useMediaCollection, useFilteredItems } from './hooks/useMediaCollection';
 import MediaForm from './components/MediaForm';
