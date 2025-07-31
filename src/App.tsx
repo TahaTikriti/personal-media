@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Plus, FileText, Download, Upload, Database, CheckSquare, Trash2, Square } from 'lucide-react';
 import type { MediaItem, SearchFilters } from './types';
 import { useMediaCollection, useFilteredItems } from './hooks/useMediaCollection';
@@ -17,6 +17,7 @@ function App() {
   const [showMockData, setShowMockData] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showBulkHint, setShowBulkHint] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     sortBy: 'title',
@@ -63,9 +64,24 @@ function App() {
     URL.revokeObjectURL(url);
   }, [mediaItems]);
 
+  // Show bulk hint after user has accumulated items
+  useEffect(() => {
+    if (mediaItems.length >= 5 && !isSelectionMode) {
+      const hasSeenHint = localStorage.getItem('hasSeenBulkHint');
+      if (!hasSeenHint) {
+        setShowBulkHint(true);
+        setTimeout(() => {
+          setShowBulkHint(false);
+          localStorage.setItem('hasSeenBulkHint', 'true');
+        }, 5000);
+      }
+    }
+  }, [mediaItems.length, isSelectionMode]);
+
   const handleToggleSelection = useCallback(() => {
     setIsSelectionMode(prev => !prev);
     setSelectedItems(new Set());
+    setShowBulkHint(false);
   }, []);
 
   const handleSelectItem = useCallback((id: string, isSelected: boolean) => {
@@ -126,12 +142,34 @@ function App() {
     }
   }, [importItems, addBulkItems]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isSelectionMode) {
+        setIsSelectionMode(false);
+        setSelectedItems(new Set());
+      }
+      if (e.key === 'a' && e.ctrlKey && isSelectionMode) {
+        e.preventDefault();
+        handleSelectAll();
+      }
+      if (e.key === 'Delete' && isSelectionMode && selectedItems.size > 0) {
+        e.preventDefault();
+        handleBulkDelete();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isSelectionMode, selectedItems, handleSelectAll, handleBulkDelete]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col space-y-4">
+            {/* Title Section */}
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 Personal Media Collection
@@ -141,70 +179,125 @@ function App() {
               </p>
             </div>
             
-            <div className="mt-4 sm:mt-0 flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowStats(!showStats)}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-              >
-                <FileText size={16} className="mr-1" />
-                {showStats ? 'Hide' : 'Show'} Stats
-              </button>
-              
-              <button
-                onClick={() => setShowMockData(true)}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-              >
-                <Database size={16} className="mr-1" />
-                Demo Data
-              </button>
-              
-              {mediaItems.length > 0 && (
+            {/* Action Buttons Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Primary Actions */}
+              <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={handleToggleSelection}
-                  className={`inline-flex items-center px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
-                    isSelectionMode 
-                      ? 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100' 
-                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                  }`}
+                  onClick={() => setShowForm(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm"
                 >
-                  <CheckSquare size={16} className="mr-1" />
-                  {isSelectionMode ? 'Cancel' : 'Select Items'}
+                  <Plus size={16} className="mr-2" />
+                  Add Media
                 </button>
-              )}
+                
+                {mediaItems.length === 0 && (
+                  <button
+                    onClick={() => setShowMockData(true)}
+                    className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                  >
+                    <Database size={16} className="mr-2" />
+                    Try Demo Data
+                  </button>
+                )}
+                
+                {mediaItems.length > 0 && (
+                  <div className="relative">
+                    <button
+                      onClick={handleToggleSelection}
+                      className={`inline-flex items-center px-4 py-2 border rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isSelectionMode 
+                          ? 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100 shadow-sm ring-2 ring-red-200' 
+                          : 'border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100 shadow-sm'
+                      }`}
+                    >
+                      <CheckSquare size={16} className="mr-2" />
+                      {isSelectionMode ? 'Exit Selection Mode' : 'Bulk Select & Delete'}
+                    </button>
+                    
+                    {showBulkHint && !isSelectionMode && (
+                      <div className="absolute top-full left-0 mt-2 p-3 bg-yellow-100 border border-yellow-300 rounded-lg shadow-lg max-w-xs z-10">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0">
+                            <span className="text-yellow-600">💡</span>
+                          </div>
+                          <div className="ml-2">
+                            <p className="text-sm text-yellow-800 font-medium">
+                              New Feature!
+                            </p>
+                            <p className="text-xs text-yellow-700 mt-1">
+                              Select multiple items and delete them all at once using this button.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               
-              <button
-                onClick={exportData}
-                disabled={mediaItems.length === 0}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Download size={16} className="mr-1" />
-                Export
-              </button>
-              
-              <label className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors">
-                <Upload size={16} className="mr-1" />
-                Import
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importData}
-                  className="hidden"
-                />
-              </label>
-              
-              <button
-                onClick={() => setShowForm(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-              >
-                <Plus size={16} className="mr-1" />
-                Add Media
-              </button>
+              {/* Secondary Actions */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setShowStats(!showStats)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                >
+                  <FileText size={14} className="mr-1" />
+                  {showStats ? 'Hide Stats' : 'Show Stats'}
+                </button>
+                
+                {mediaItems.length > 0 && (
+                  <button
+                    onClick={() => setShowMockData(true)}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    <Database size={14} className="mr-1" />
+                    Demo Data
+                  </button>
+                )}
+                
+                <button
+                  onClick={exportData}
+                  disabled={mediaItems.length === 0}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Download size={14} className="mr-1" />
+                  Export
+                </button>
+                
+                <label className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors">
+                  <Upload size={14} className="mr-1" />
+                  Import
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importData}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Statistics */}
         {showStats && <Statistics items={mediaItems} />}
+
+        {/* Selection Mode Indicator */}
+        {isSelectionMode && (
+          <div className="mb-4 p-3 bg-orange-50 border-l-4 border-orange-400 rounded-r-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <CheckSquare className="h-5 w-5 text-orange-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-orange-700">
+                  <strong>Selection Mode Active</strong> - Click on items to select them for bulk actions
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search and Filters */}
         <SearchAndFilter
@@ -216,10 +309,10 @@ function App() {
 
         {/* Bulk Actions Bar */}
         {isSelectionMode && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center space-x-4">
-                <label className="flex items-center">
+                <div className="flex items-center">
                   <input
                     type="checkbox"
                     checked={selectedItems.size === filteredItems.length && filteredItems.length > 0}
@@ -227,20 +320,41 @@ function App() {
                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm font-medium text-gray-700">
-                    Select All ({selectedItems.size} of {filteredItems.length} selected)
+                    Select All
                   </span>
-                </label>
+                </div>
+                <div className="text-sm">
+                  <span className="font-semibold text-blue-600">{selectedItems.size}</span>
+                  <span className="text-gray-600"> of </span>
+                  <span className="font-semibold text-gray-700">{filteredItems.length}</span>
+                  <span className="text-gray-600"> items selected</span>
+                </div>
               </div>
               
-              {selectedItems.size > 0 && (
+              <div className="flex items-center space-x-3">
+                <div className="hidden sm:block text-xs text-gray-500 bg-white px-2 py-1 rounded border">
+                  💡 Tip: Click items or use Ctrl+A, Delete, Esc
+                </div>
+                
                 <button
-                  onClick={handleBulkDelete}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                  onClick={handleToggleSelection}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                  title="Press Esc to cancel selection mode"
                 >
-                  <Trash2 size={16} className="mr-1" />
-                  Delete Selected ({selectedItems.size})
+                  Cancel
                 </button>
-              )}
+                
+                {selectedItems.size > 0 && (
+                  <button
+                    onClick={handleBulkDelete}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm"
+                    title="Press Delete key to remove selected items"
+                  >
+                    <Trash2 size={16} className="mr-1" />
+                    Delete {selectedItems.size} Item{selectedItems.size > 1 ? 's' : ''}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -281,7 +395,9 @@ function App() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 transition-all duration-300 ${
+            isSelectionMode ? 'transform scale-[0.98]' : ''
+          }`}>
             {filteredItems.map(item => (
               <MediaCard
                 key={item.id}

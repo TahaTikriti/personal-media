@@ -1,5 +1,5 @@
 import React, { memo, useCallback } from 'react';
-import { Edit2, Trash2, Star, Calendar, User, Tag } from 'lucide-react';
+import { Edit2, Trash2, Star, Calendar, User, Tag, CheckSquare } from 'lucide-react';
 import type { MediaItem } from '../types';
 import { formatDate, getGenreColor } from '../utils';
 import { getTypeIcon, getStatusColor } from '../constants';
@@ -50,9 +50,16 @@ const MediaCard: React.FC<MediaCardProps> = ({
   }, []);
 
   return (
-    <div className={`bg-white rounded-lg shadow-md border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
-      isSelectionMode && isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-    }`}>
+    <div 
+      className={`bg-white rounded-lg shadow-md border overflow-hidden transition-all duration-300 hover:shadow-lg ${
+        isSelectionMode 
+          ? isSelected 
+            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200 cursor-pointer' 
+            : 'border-gray-200 hover:border-blue-300 cursor-pointer'
+          : 'border-gray-200 hover:-translate-y-1'
+      }`}
+      onClick={isSelectionMode ? handleCardClick : undefined}
+    >
       <div className="p-4">
         <div className="flex justify-between items-start mb-3">
           {isSelectionMode && (
@@ -61,6 +68,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
                 type="checkbox"
                 checked={isSelected}
                 onChange={handleSelect}
+                onClick={(e) => e.stopPropagation()}
                 className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
             </div>
@@ -71,6 +79,11 @@ const MediaCard: React.FC<MediaCardProps> = ({
               <h3 className="font-semibold text-lg text-gray-800 line-clamp-1">
                 {item.title}
               </h3>
+              {isSelectionMode && isSelected && (
+                <div className="ml-auto">
+                  <CheckSquare size={16} className="text-blue-600" />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1 text-gray-600 mb-2">
               <User size={14} />
@@ -78,22 +91,24 @@ const MediaCard: React.FC<MediaCardProps> = ({
             </div>
           </div>
           
-          <div className="flex gap-1 ml-2">
-            <button
-              onClick={handleEdit}
-              className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
-              title="Edit"
-            >
-              <Edit2 size={16} />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-              title="Delete"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
+          {!isSelectionMode && (
+            <div className="flex gap-1 ml-2">
+              <button
+                onClick={handleEdit}
+                className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-all"
+                title="Edit"
+              >
+                <Edit2 size={16} />
+              </button>
+              <button
+                onClick={handleDelete}
+                className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                title="Delete"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
