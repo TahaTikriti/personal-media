@@ -119,7 +119,7 @@ function performSemanticSearch(query: string, items: MediaItem[], keyTerms: stri
       item.title,
       item.creator,
       item.genre,
-      item.description,
+      item.notes,
       item.type,
       item.status,
       ...(item.tags || [])
@@ -142,7 +142,7 @@ function performBasicSearch(query: string, items: MediaItem[]): MediaItem[] {
       item.title,
       item.creator,
       item.genre,
-      item.description,
+      item.notes,
       item.type,
       ...(item.tags || [])
     ].join(' ').toLowerCase();

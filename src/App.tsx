@@ -305,6 +305,7 @@ function App() {
           onFiltersChange={setFilters}
           totalItems={mediaItems.length}
           filteredItems={filteredItems.length}
+          mediaItems={mediaItems}
         />
 
         {/* Bulk Actions Bar */}
