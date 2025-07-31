@@ -38,12 +38,17 @@ export const useMediaCollection = () => {
     setMediaItems(items);
   }, []);
 
+  const addBulkItems = useCallback((items: MediaItem[]) => {
+    setMediaItems(prev => [...prev, ...items]);
+  }, []);
+
   return {
     mediaItems,
     addItem,
     updateItem,
     deleteItem,
     importItems,
+    addBulkItems,
   };
 };
 

@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Wand2, Loader2 } from 'lucide-react';
 import type { MediaItem, MediaType, MediaStatus } from '../types';
 import { generateId, suggestGenre } from '../utils';
 import { MEDIA_TYPES, MEDIA_STATUSES } from '../constants';
+import { enrichMediaData, isAIEnabled } from '../services/aiService';
 
 interface MediaFormProps {
   item?: MediaItem;
@@ -25,6 +26,8 @@ const MediaForm: React.FC<MediaFormProps> = ({ item, onSave, onCancel }) => {
   });
 
   const [tagInput, setTagInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // Memoize genre suggestions for better performance
   const genreSuggestions = useMemo(() => {
@@ -85,6 +88,39 @@ const MediaForm: React.FC<MediaFormProps> = ({ item, onSave, onCancel }) => {
     }
   }, [addTag]);
 
+  // AI Enhancement function
+  const enhanceWithAI = useCallback(async () => {
+    if (!formData.title || !formData.creator || !formData.type) {
+      setAiError('Please enter title, creator, and select type first');
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const result = await enrichMediaData(formData.title, formData.creator, formData.type);
+      
+      if (result.success) {
+        setFormData(prev => ({
+          ...prev,
+          genre: result.genre || prev.genre,
+          releaseDate: result.releaseDate || prev.releaseDate,
+          notes: result.description || prev.notes,
+          tags: result.tags?.length ? [...(prev.tags || []), ...result.tags] : prev.tags,
+          rating: result.rating || prev.rating
+        }));
+        setAiError(null);
+      } else {
+        setAiError(result.error || 'AI enhancement failed');
+      }
+    } catch (error) {
+      setAiError('Failed to enhance with AI. Please try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [formData.title, formData.creator, formData.type]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -101,6 +137,44 @@ const MediaForm: React.FC<MediaFormProps> = ({ item, onSave, onCancel }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* AI Enhancement Section */}
+          {isAIEnabled() && (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Wand2 size={20} className="text-blue-600" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-800">AI Enhancement</h3>
+                    <p className="text-xs text-gray-600">Automatically fill details with AI</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={enhanceWithAI}
+                  disabled={aiLoading || !formData.title || !formData.creator}
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {aiLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Enhancing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} />
+                      Enhance with AI
+                    </>
+                  )}
+                </button>
+              </div>
+              {aiError && (
+                <div className="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded">
+                  {aiError}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

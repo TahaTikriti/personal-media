@@ -8,11 +8,30 @@ interface MediaCardProps {
   item: MediaItem;
   onEdit: (item: MediaItem) => void;
   onDelete: (id: string) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string, isSelected: boolean) => void;
 }
 
-const MediaCard: React.FC<MediaCardProps> = ({ item, onEdit, onDelete }) => {
+const MediaCard: React.FC<MediaCardProps> = ({ 
+  item, 
+  onEdit, 
+  onDelete, 
+  isSelectionMode = false, 
+  isSelected = false, 
+  onSelect 
+}) => {
   const handleEdit = useCallback(() => onEdit(item), [item, onEdit]);
   const handleDelete = useCallback(() => onDelete(item.id), [item.id, onDelete]);
+  const handleSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onSelect?.(item.id, e.target.checked);
+  }, [item.id, onSelect]);
+
+  const handleCardClick = useCallback(() => {
+    if (isSelectionMode) {
+      onSelect?.(item.id, !isSelected);
+    }
+  }, [item.id, onSelect, isSelectionMode, isSelected]);
 
   const renderStars = useCallback((rating?: number) => {
     if (!rating) return null;
@@ -31,9 +50,21 @@ const MediaCard: React.FC<MediaCardProps> = ({ item, onEdit, onDelete }) => {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+    <div className={`bg-white rounded-lg shadow-md border overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
+      isSelectionMode && isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+    }`}>
       <div className="p-4">
         <div className="flex justify-between items-start mb-3">
+          {isSelectionMode && (
+            <div className="mr-3 pt-1">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={handleSelect}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+            </div>
+          )}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg">{getTypeIcon(item.type)}</span>

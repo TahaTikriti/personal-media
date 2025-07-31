@@ -29,10 +29,16 @@ A modern, AI-powered media collection management application built with React, T
 - **Smart Filtering**: Filter by type, status, genre with real-time results
 - **Flexible Sorting**: Sort by title, creator, release date, date added, or rating
 
-### AI-Powered Features
-- **Smart Genre Suggestions**: AI suggests genres based on title and creator
-- **Intelligent Search**: Semantic search across all fields
-- **Auto-categorization**: Automatic suggestions for media types and genres
+### AI-Powered Features ✨
+- **Smart Data Enhancement**: Click "Enhance with AI" to automatically fill in genre, release date, description, and tags
+- **Intelligent Genre Detection**: Real-time genre suggestions as you type
+- **Content Enrichment**: AI analyzes your title and creator to provide detailed information
+- **Smart Tagging**: Automatically suggests relevant tags based on content analysis
+
+### Basic Features (No API Key Required)
+- **Keyword-based Genre Suggestions**: Basic genre detection using pattern matching
+- **Smart Search**: Enhanced search across all fields
+- **Manual Data Entry**: Full manual control over all media details
 
 ### User Experience
 - **Responsive Design**: Works perfectly on desktop, tablet, and mobile
@@ -45,6 +51,7 @@ A modern, AI-powered media collection management application built with React, T
 
 ### Prerequisites
 - Node.js 18+ and npm
+- OpenAI API Key (optional, for AI features)
 
 ### Installation
 
@@ -58,13 +65,29 @@ A modern, AI-powered media collection management application built with React, T
    npm install
    ```
 
-3. **Start the development server**
+3. **Configure AI Features (Optional)**
+   - Copy `.env.local` and add your OpenAI API key:
+   ```bash
+   VITE_OPENAI_API_KEY=your_actual_openai_api_key_here
+   ```
+   - Without an API key, basic keyword-based suggestions will be used
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser**
+5. **Open your browser**
    Navigate to `http://localhost:5173`
+
+### Deployment with AI Features
+
+#### Vercel Deployment
+1. Add your OpenAI API key in Vercel environment variables:
+   - Go to your Vercel project dashboard
+   - Navigate to Settings → Environment Variables
+   - Add: `VITE_OPENAI_API_KEY` = `your_openai_api_key`
+   - Redeploy your application
 
 ### Building for Production
 
